@@ -59,17 +59,22 @@ int stringToInt(char* text)
 int getValidInt()
 {
 	char buffer[SIZE_OF_TEXT];
-	while (true)
+	if (!(std::cin >> buffer))
 	{
-		std::cin >> buffer;
-		if (areAllDigits(buffer))
-		{
-			return stringToInt(buffer);
-		}
-		else
-		{
-			std::cout << "Invalid Input! You can only put numbers for your coordinats! Please enter only numbers:";
-		}
+		std::cin.clear();
+		std::cin.ignore(10000, '\n');
+		return -1;
+	}
+
+	if (areAllDigits(buffer))
+	{
+		return stringToInt(buffer);
+	}
+	else
+	{
+		std::cin.clear();
+		std::cin.ignore(10000, '\n');
+		return -1;
 	}
 }
 
@@ -126,45 +131,88 @@ void printBattleField(char field[MAX_FIELD_ROWS][MAX_FIELD_LENGHT], int n)
 	}
 }
 
+bool areShipsNotDirectlyNextToEachOther(char field[][MAX_FIELD_LENGHT], int row, int coll, char direction, int k, int n)
+{
+	for (int i = 0; i < k; ++i)
+	{
+		int Row = (direction == 'v') ? (row + i) : row;
+		int Coll = (direction == 'h') ? (coll + i) : coll;
+
+		if (Row - 1 >= 1 && field[Row - 1][Coll] == SHIP)
+		{
+			return false;
+		}
+		if (Row + 1 <= n && field[Row + 1][Coll] == SHIP)
+		{
+			return false;
+		}
+		if (Coll - 1 >= 1 && field[Row][Coll - 1] == SHIP && field[Row][Coll - 1] != SEPARATION)
+		{
+			return false;
+		}
+		if (Coll + 1 < MAX_FIELD_LENGHT && field[Row][Coll + 1] == SHIP && field[Row][Coll + 1] != SEPARATION)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 bool isItValidPlaceToPutShipWiyhLenghtOfK(char field[][MAX_FIELD_LENGHT], int row, int coll, char direction, int k, int n)
 {
 	int middle = n + 1;
 	if (direction == 'h')
 	{
-		if (coll + k > n + 1)
+		if (coll + k - 1 > n)
+		{
 			return false;
+		}
 		for (int i = 0; i < k; ++i)
 		{
 			if (field[row][coll + i + middle] != WATER)
+			{
 				return false;
+			}
 		}
-		return true;
 	}
 	else if (direction == 'v')
 	{
-		if (row + k > n + 1)
+		if (row + k - 1 > n)
+		{
 			return false;
+		}
 		for (int i = 0; i < k; ++i)
 		{
 			if (field[row + i][coll + middle] != WATER)
+			{
 				return false;
+			}
 		}
-		return true;
 	}
-	else return false;
+	else
+	{
+		return false;
+	}
+
+	if (!areShipsNotDirectlyNextToEachOther(field, row, coll + middle, direction, k, n))
+	{
+		return false;
+	}
+
+	return true;
 }
 
-bool areValidNumbersForRowsAndColls(int row, int coll)
+bool areValidNumbersForRowsAndColls(int row, int coll, int n)
 {
-	if (row < 1 || row > 15 || coll < 1 || coll > 15)
+	if (row < 1 || row > n || coll < 1 || coll > n)
 		return false;
 	return true;
 }
 
-void manulalPlacingOfShips(char field[][MAX_FIELD_LENGHT], int size)
+void manulalPlacingOfShips(char field[][MAX_FIELD_LENGHT], int n)
 {
-	printBattleField(field, size);
-	int middle = size + 1;
+	printBattleField(field, n);
+	int middle = n + 1;
 	int sizes[AMOUNT_OF_SHIPS] = { 4,3,3,2,2,2,1,1,1,1 };
 	for (int i = 0; i < AMOUNT_OF_SHIPS; ++i)
 	{
@@ -173,10 +221,14 @@ void manulalPlacingOfShips(char field[][MAX_FIELD_LENGHT], int size)
 		bool allShipsPlaced = false;
 		while (!allShipsPlaced)
 		{
-			std::cout << "Place your next ship which is " << sizes[i] << " tiles long.(ships left to place:" << 10 - i << ")" << std::endl << "To place your ship first input the starting coordinats and after that choose it to be horizontal(h) or vertical(v)." << std::endl << "The game will place the rest of your ship. Input your coordinats:";
+			std::cout << "Place your next ship which is " << sizes[i] << " tiles long.(ships left to place:" << 10 - i << ")" << std::endl;
+			std::cout << "To place your ship first input the starting coordinats and after that choose it to be horizontal(h) or vertical(v)." << std::endl;
+			std::cout << "After you type in the coordinates of the first tile of your ship," << std::endl << "the rest of the ship wiil be placed autumaticly based of the direction " << std::endl;
+			std::cout << "You can not place ships directly next to each other!" << std::endl;
+			std::cout << "Input your coordinats:" << std::endl;
 			row = getValidInt();
 			coll = getValidInt();
-			while (!areValidNumbersForRowsAndColls(row, coll))
+			while (!areValidNumbersForRowsAndColls(row, coll, n))
 			{
 				std::cout << "Invalid coordinats please input new ones:";
 				row = getValidInt();
@@ -191,13 +243,13 @@ void manulalPlacingOfShips(char field[][MAX_FIELD_LENGHT], int size)
 					std::cout << "Invalid direction please input new one:";
 					std::cin >> direction;
 				}
-				while (!isItValidPlaceToPutShipWiyhLenghtOfK(field, row, coll, direction, sizes[i], size))
+				while (!isItValidPlaceToPutShipWiyhLenghtOfK(field, row, coll, direction, sizes[i], n))
 				{
 					std::cout << "You can not place ship of that lenght there!" << std::endl;
 					std::cout << "Please enter new values for row coll:";
 					row = getValidInt();
 					coll = getValidInt();
-					while (!areValidNumbersForRowsAndColls(row, coll))
+					while (!areValidNumbersForRowsAndColls(row, coll, n))
 					{
 						std::cout << "Invalid coordinats please input new ones:";
 						row = getValidInt();
@@ -227,10 +279,18 @@ void manulalPlacingOfShips(char field[][MAX_FIELD_LENGHT], int size)
 				}
 			}
 			else if (sizes[i] == 1)
-			{
-				field[row][coll + middle] = SHIP;
-			}
-			printBattleField(field, size);
+				while (!isItValidPlaceToPutShipWiyhLenghtOfK(field, row, coll, 'h', 1, n))
+				{
+					std::cout << "You cannot place a ship nex to each other! New Row and Col: ";
+					row = getValidInt();
+					coll = getValidInt();
+					while (!areValidNumbersForRowsAndColls(row, coll, n)) {
+						row = getValidInt();
+						coll = getValidInt();
+					}
+				}
+			field[row][coll + middle] = SHIP;
+			printBattleField(field, n);
 			allShipsPlaced = true;
 		}
 	}
@@ -243,20 +303,42 @@ bool isItValidPlaceForAutumatic(char field[][MAX_FIELD_LENGHT], int row, int col
 
 	if (direction == 'h')
 	{
-		if (startCol + k - 1 > limitCol) return false;
+		if (startCol + k - 1 > limitCol)
+		{
+			return false;
+		}
 		for (int i = 0; i < k; ++i)
 		{
-			if (field[row][startCol + i] != WATER) return false;
+			if (field[row][startCol + i] != WATER)
+			{
+				return false;
+			}
+		}
+	}
+	else if (direction == 'v')
+	{
+		if (row + k - 1 > n)
+		{
+			return false;
+		}
+		for (int i = 0; i < k; ++i)
+		{
+			if (field[row + i][startCol] != WATER)
+			{
+				return false;
+			}
 		}
 	}
 	else
 	{
-		if (row + k - 1 > n) return false;
-		for (int i = 0; i < k; ++i)
-		{
-			if (field[row + i][startCol] != WATER) return false;
-		}
+		return false;
 	}
+
+	if (!areShipsNotDirectlyNextToEachOther(field, row, startCol, direction, k, n))
+	{
+		return false;
+	}
+
 	return true;
 }
 
@@ -346,6 +428,39 @@ void chooseManualOrAutumaticPlacedShips(char field[][MAX_FIELD_LENGHT], int size
 
 }
 
+bool isAShipSunk(char field[][MAX_FIELD_LENGHT], int row, int coll, int n)
+{
+	int tempColl = coll - 1;
+	while (tempColl >= 1 && field[row][tempColl] != WATER && field[row][tempColl] != MISS && field[row][tempColl] != SEPARATION)
+	{
+		if (field[row][tempColl] == SHIP)
+			return false;
+		tempColl--;
+	}
+	tempColl = coll + 1;
+	while (tempColl <= (2 * n + 1) && field[row][tempColl] != WATER && field[row][tempColl] != MISS && field[row][tempColl] != SEPARATION)
+	{
+		if (field[row][tempColl] == SHIP)
+			return false;
+		tempColl++;
+	}
+	int tempRow = row - 1;
+	while (tempRow >= 1 && field[tempRow][coll] != WATER && field[tempRow][coll] != MISS)
+	{
+		if (field[tempRow][coll] == SHIP)
+			return false;
+		tempRow--;
+	}
+	tempRow = row + 1;
+	while (tempRow <= n && field[tempRow][coll] != WATER && field[tempRow][coll] != MISS)
+	{
+		if (field[tempRow][coll] == SHIP)
+			return false;
+		tempRow++;
+	}
+	return true;
+}
+
 bool isThisTileAlreadyShooted(char field[][MAX_FIELD_LENGHT], int row, int coll)
 {
 	return field[row][coll] == HIT || field[row][coll] == MISS;
@@ -363,6 +478,11 @@ bool canAttakThere(char field[][MAX_FIELD_LENGHT], int n, int row, int coll)
 		return false;
 	}
 	return true;
+}
+
+bool areAllShipTilesHitted(int k)
+{
+	return k == AMOUNT_OF_SHIPS_TILES;
 }
 
 void playerAttack(char field[][MAX_FIELD_LENGHT], int n, int& amountOfHittedTiles)
@@ -386,7 +506,13 @@ void playerAttack(char field[][MAX_FIELD_LENGHT], int n, int& amountOfHittedTile
 		if (field[row][coll] == SHIP)
 		{
 			field[row][coll] = HIT;
+			if (isAShipSunk(field, row, coll, n))
+			{
+				std::cout << "BOOM! You just SUNK an enemy ship!";
+				Sleep(1500);
+			}
 			amountOfHittedTiles++;
+			if (areAllShipTilesHitted(amountOfHittedTiles)) return;
 			printBattleField(field, n);
 			std::cout << "YOU HIT! Shoot again." << std::endl;
 			Sleep(1500);
@@ -439,10 +565,16 @@ void computerAttack(char field[][MAX_FIELD_LENGHT], int n, int& amountOfHittedTi
 		{
 			field[row][coll] = HIT;
 			amountOfHittedTiles++;
+			if (areAllShipTilesHitted(amountOfHittedTiles)) return;
 			printBattleField(field, n);
 			isHit = true;
 			std::cout << "Computer hit yout ship at:" << row << EMPTY_SPACE << coll - middle << '!' << std::endl;
 			Sleep(2500);
+			if (isAShipSunk(field, row, coll, n))
+			{
+				std::cout << "BOOM! Computer just SUNK one of your ships!" << std::endl;
+				Sleep(1500);
+			}
 			std::cout << "Computer thinking for his next shot...";
 			Sleep(1500);
 		}
@@ -455,11 +587,6 @@ void computerAttack(char field[][MAX_FIELD_LENGHT], int n, int& amountOfHittedTi
 			Sleep(2500);
 		}
 	}
-}
-
-bool areAllShipTilesHitted(int k)
-{
-	return k == AMOUNT_OF_SHIPS_TILES;
 }
 
 void attacking(char field[][MAX_FIELD_LENGHT], int n)
@@ -496,7 +623,7 @@ void startGame()
 
 int main()
 {
-	srand(time(0));
+	srand((unsigned int)time(0));
 	startGame();
 	return 0;
 }
