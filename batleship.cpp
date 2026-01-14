@@ -102,6 +102,43 @@ void createBattleField(char field[MAX_FIELD_ROWS][MAX_FIELD_LENGTH], int n)
 	}
 }
 
+int myStrLen(const char* text)
+{
+	if (!text)
+		return 0;
+	int len = 0;
+	while (*text)
+	{
+		len++;
+		text++;
+	}
+	return len;
+}
+
+void printHeaders(int n)
+{
+	std::cout << "   ";
+
+	int width = n * 2;
+
+	int textLenComputer = myStrLen("COMPUTER");
+	int spacesComputer = (width - textLenComputer) / 2;
+
+	for (int k = 0; k < spacesComputer; ++k) std::cout << EMPTY_SPACE;
+	std::cout << "COMPUTER";
+	for (int k = 0; k < spacesComputer; ++k) std::cout << EMPTY_SPACE;
+	if ((width - textLenComputer) % 2 != 0) std::cout << EMPTY_SPACE;
+
+	std::cout << "  ";
+	int textLenPlayer = myStrLen("PLAYER");
+	int spacesPlayer = (width - textLenPlayer) / 2;
+
+	for (int k = 0; k < spacesPlayer; ++k) std::cout << " ";
+	std::cout << "PLAYER";
+
+	std::cout << std::endl;
+}
+
 void printNumbers(int n)
 {
 	std::cout << "   ";
@@ -121,6 +158,7 @@ void printBattleField(char field[MAX_FIELD_ROWS][MAX_FIELD_LENGTH], int n)
 {
 	clearConsole();
 	setColor(COLOR_TEXT);
+	printHeaders(n);
 	printNumbers(n);
 	int middle = n + 1;
 	for (int i = 1; i <= n; ++i)
@@ -253,14 +291,15 @@ bool areValidNumbersForRowsAndCols(int row, int col, int n)
 }
 
 void printPlacementInstructions() {
-	std::cout << "============================================================" << std::endl;
-	std::cout << "                SHIP PLACEMENT INSTRUCTIONS                 " << std::endl;
-	std::cout << "============================================================" << std::endl;
-	std::cout << "* To place a ship, enter starting coordinates (Row and Col)." << std::endl;
-	std::cout << "* Then choose direction: 'h' (horizontal) or 'v' (vertical)." << std::endl;
-	std::cout << "* The rest of the ship will be placed automatically." << std::endl;
-	std::cout << "* RULE: Ships cannot be directly next to each other!" << std::endl;
-	std::cout << "============================================================" << std::endl;
+	std::cout << "================================================================" << std::endl;
+	std::cout << "                   SHIP PLACEMENT INSTRUCTIONS                  " << std::endl;
+	std::cout << "================================================================" << std::endl;
+	std::cout << "* To place a ship, enter starting coordinates (Row and Col).   *" << std::endl;
+	std::cout << "* Then choose direction: 'h' (horizontal) or 'v' (vertical).   *" << std::endl;
+	std::cout << "* 'h' - will place your ship to the right and 'v' - downwards. *" << std::endl;
+	std::cout << "* The rest of the ship will be placed automatically.           *" << std::endl;
+	std::cout << "* RULE: Ships cannot be directly next to each other!           *" << std::endl;
+	std::cout << "================================================================" << std::endl;
 	std::cout << "Press any key to start placing your ships..." << std::endl;
 	system("pause");
 }
@@ -411,6 +450,27 @@ void automaticPlacing(char field[][MAX_FIELD_LENGTH], int size, bool isPlayer)
 	}
 }
 
+void startOrLoadGame()
+{
+	int k;
+	std::cout << "Choose to start a new game or to replay old one:" << std::endl;
+	std::cout << "1. Start new game" << std::endl;
+	std::cout << "2. Load old game" << std::endl;
+	k = getValidInt();
+	while (k != 1 && k != 2)
+	{
+		std::cout << "Invalid input! Choose 1 or 2: ";
+		k = getValidInt();
+	}
+	switch (k)
+	{
+	case 1:
+		Sleep(100);
+		clearConsole(); return; break;
+	case 2:break;
+	}
+}
+
 void chooseDifficulty(int& n)
 {
 	std::cout << "Choose Difficulty:" << std::endl;
@@ -429,7 +489,7 @@ void chooseDifficulty(int& n)
 	case 2: n = 12; break;
 	case 3: n = 15; break;
 	}
-	Sleep(200);
+	Sleep(100);
 	clearConsole();
 }
 
@@ -538,14 +598,15 @@ void playerAttack(char field[][MAX_FIELD_LENGTH], int n, int& amountOfHitTiles)
 
 		if (field[row][col] == SHIP) {
 			field[row][col] = HIT;
+			printBattleField(field, n);
 			if (isAShipSunk(field, row, col, n)) {
-				std::cout << "BOOM! You SUNK an enemy ship!";
+				std::cout << "BOOM! You SUNK an enemy ship!" << std::endl;
 				Sleep(1500);
 			}
 			amountOfHitTiles++;
 			if (areAllShipTilesHit(amountOfHitTiles))
 				return;
-			printBattleField(field, n);
+
 			std::cout << "YOU HIT! Shoot again." << std::endl;
 			Sleep(1500);
 
@@ -629,13 +690,13 @@ void attacking(char field[][MAX_FIELD_LENGTH], int n)
 		playerAttack(field, n, amountOfHitTilesPlayer);
 		if (areAllShipTilesHit(amountOfHitTilesPlayer))
 		{
-			std::cout << "CONGRATULATIONS YOU HAVE SUCCESSFULLY SUNK ALL OF THE ENEMY'S SHIPS" << std::endl << "YOU WIN!!!";
+			std::cout << std::endl << "CONGRATULATIONS YOU HAVE SUCCESSFULLY SUNK ALL OF THE ENEMY'S SHIPS" << std::endl << "YOU WIN!!!";
 			break;
 		}
 		computerAttack(field, n, amountOfHitTilesComputer);
 		if (areAllShipTilesHit(amountOfHitTilesComputer))
 		{
-			std::cout << "YOUR OPPONENT HAS SUNK ALL YOUR SHIPS" << std::endl << "YOU LOSE! BETTER LUCK NEXT TIME!";
+			std::cout << std::endl << "YOUR OPPONENT HAS SUNK ALL YOUR SHIPS" << std::endl << "YOU LOSE! BETTER LUCK NEXT TIME!";
 			break;
 		}
 	}
@@ -645,6 +706,7 @@ void startGame()
 {
 	int n;
 	char field[MAX_FIELD_ROWS][MAX_FIELD_LENGTH];
+	startOrLoadGame();
 	chooseDifficulty(n);
 	createBattleField(field, n);
 	automaticPlacing(field, n, false);
