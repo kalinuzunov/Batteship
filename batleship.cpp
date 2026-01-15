@@ -34,6 +34,12 @@ void setColor(int color)
 	SetConsoleTextAttribute(hConsole, color);
 }
 
+void clearInputStream()
+{
+	std::cin.clear();
+	std::cin.ignore(10000, '\n');
+}
+
 bool isNumber(char sym)
 {
 	return sym <= '9' && sym >= '0';
@@ -207,8 +213,7 @@ void getValidCoordinates(int& row, int& col, int n) {
 		}
 		std::cout << "Invalid input! Please enter two numbers between 1 and " << n << ": ";
 
-		std::cin.clear();
-		std::cin.ignore(10000, '\n');
+		clearInputStream();
 	}
 }
 
@@ -325,16 +330,17 @@ void manualPlacingOfShips(char field[][MAX_FIELD_LENGTH], int n)
 			std::cout << "Enter starting coordinates (row and col): ";
 
 			getValidCoordinates(row, col, n);
+			clearInputStream();
 
 			if (sizes[i] > 1) {
 				std::cout << "Choose direction - horizontal(h) or vertical(v): ";
 				std::cin >> direction;
+				clearInputStream();
 
 				while (direction != 'h' && direction != 'v')
 				{
 					std::cout << "Invalid direction! Use 'h' or 'v': ";
-					std::cin.clear();
-					std::cin.ignore(10000, '\n');
+					clearInputStream();
 					std::cin >> direction;
 				}
 
@@ -462,6 +468,7 @@ void startOrLoadGame()
 		std::cout << "Invalid input! Choose 1 or 2: ";
 		k = getValidInt();
 	}
+	clearInputStream();
 	switch (k)
 	{
 	case 1:
@@ -483,6 +490,7 @@ void chooseDifficulty(int& n)
 		std::cout << "Invalid input! Choose one of the presented options:" << std::endl;
 		n = getValidInt();
 	}
+	clearInputStream();
 	switch (n)
 	{
 	case 1: n = 10; break;
@@ -506,7 +514,7 @@ void chooseManualOrAutomaticPlacedShips(char field[][MAX_FIELD_LENGTH], int size
 		std::cout << "Invalid input! Choose 1 or 2: ";
 		k = getValidInt();
 	}
-
+	clearInputStream();
 	switch (k)
 	{
 	case 1:
@@ -617,6 +625,7 @@ void playerAttack(char field[][MAX_FIELD_LENGTH], int n, int& amountOfHitTiles)
 			std::cout << "MISS! Computer's turn." << std::endl;
 			Sleep(1500);
 			isHit = false;
+			clearInputStream();
 		}
 	}
 }
