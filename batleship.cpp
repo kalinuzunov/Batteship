@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <windows.h>
+#include <fstream>
 
 const char WATER = '~';
 const char HIT = 'X';
@@ -13,7 +14,7 @@ const char EMPTY_SPACE = ' ';
 const int MAX_FIELD_ROWS = 16;
 const int MAX_FIELD_LENGTH = 32;
 const int AMOUNT_OF_SHIPS = 10;
-const int AMOUNT_OF_SHIPS_TILES = 1 * 4 + 2 * 3 + 3 * 2 + 4 * 1;
+const int AMOUNT_OF_SHIPS_TILES = 20;
 const int SIZE_OF_TEXT = 100;
 
 const int COLOR_WATER = 9;
@@ -22,6 +23,9 @@ const int COLOR_HIT = 12;
 const int COLOR_MISS = 8;
 const int COLOR_SEPARATION = 14;
 const int COLOR_TEXT = 7;
+const int COLOR_EXIT = 4;
+
+const char* SAVE_FILE_NAME = "battleship_save.txt";
 
 void clearConsole()
 {
@@ -40,6 +44,59 @@ void clearInputStream()
 	std::cin.ignore(10000, '\n');
 }
 
+void saveGame(char field[][MAX_FIELD_LENGTH], int n, int hitsPlayer, int hitsComp)
+{
+	std::ofstream outFile(SAVE_FILE_NAME);
+	if (!outFile)
+	{
+		std::cout << "Error saving game!" << std::endl;
+		return;
+	}
+
+	outFile << n << " " << hitsPlayer << " " << hitsComp << std::endl;
+
+	for (int i = 0; i < MAX_FIELD_ROWS; ++i)
+	{
+		for (int j = 0; j < MAX_FIELD_LENGTH; ++j)
+		{
+			outFile << (int)field[i][j] << " ";
+		}
+		outFile << std::endl;
+	}
+
+	outFile.close();
+	std::cout << "Game saved successfully! Exiting..." << std::endl;
+	Sleep(1500);
+}
+
+bool loadGame(char field[][MAX_FIELD_LENGTH], int& n, int& hitsPlayer, int& hitsComp)
+{
+	std::ifstream inFile(SAVE_FILE_NAME);
+	if (!inFile)
+	{
+		std::cout << "No saved game found!" << std::endl;
+		Sleep(1500);
+		return false;
+	}
+
+	inFile >> n >> hitsPlayer >> hitsComp;
+
+	int tempVal;
+	for (int i = 0; i < MAX_FIELD_ROWS; ++i)
+	{
+		for (int j = 0; j < MAX_FIELD_LENGTH; ++j)
+		{
+			inFile >> tempVal;
+			field[i][j] = (char)tempVal;
+		}
+	}
+
+	inFile.close();
+	std::cout << "Game loaded successfully!" << std::endl;
+	Sleep(1500);
+	return true;
+}
+
 bool isNumber(char sym)
 {
 	return sym <= '9' && sym >= '0';
@@ -47,7 +104,10 @@ bool isNumber(char sym)
 
 bool areAllDigits(char* text)
 {
-	if (text == nullptr)return false;
+	if (text == nullptr)
+		return false;
+	if (text[0] == '-' && text[1] == '1' && text[2] == '\0')
+		return true;
 	while (*text)
 	{
 		if (!isNumber(*text))
@@ -66,7 +126,10 @@ int charToInt(char sym)
 
 int stringToInt(char* text)
 {
-	if (text == nullptr || !areAllDigits(text)) return 0;
+	if (text == nullptr || !areAllDigits(text))
+		return 0;
+	if (text[0] == '-' && text[1] == '1' && text[2] == '\0')
+		return -1;
 	int result = 0;
 	while (*text)
 	{
@@ -82,7 +145,7 @@ int getValidInt()
 	if (!(std::cin >> buffer))
 	{
 
-		return -1;
+		return -100;
 	}
 
 	if (areAllDigits(buffer))
@@ -92,7 +155,7 @@ int getValidInt()
 	else
 	{
 
-		return -1;
+		return -100;
 	}
 }
 
@@ -203,9 +266,13 @@ void printBattleField(char field[MAX_FIELD_ROWS][MAX_FIELD_LENGTH], int n)
 	}
 }
 
-void getValidCoordinates(int& row, int& col, int n) {
+void getValidCoordinates(int& row, int& col, int n,bool allowSave = false) {
 	while (true) {
 		row = getValidInt();
+
+		if (allowSave && row == -1)
+			return;
+
 		col = getValidInt();
 
 		if (row >= 1 && row <= n && col >= 1 && col <= n) {
@@ -456,7 +523,7 @@ void automaticPlacing(char field[][MAX_FIELD_LENGTH], int size, bool isPlayer)
 	}
 }
 
-void startOrLoadGame()
+int startOrLoadGame()
 {
 	int k;
 	std::cout << "Choose to start a new game or to replay old one:" << std::endl;
@@ -465,17 +532,13 @@ void startOrLoadGame()
 	k = getValidInt();
 	while (k != 1 && k != 2)
 	{
-		std::cout << "Invalid input! Choose 1 or 2: ";
+		std::cout << "Invalid input! Choose one of the presented options: ";
+		clearInputStream();
 		k = getValidInt();
 	}
 	clearInputStream();
-	switch (k)
-	{
-	case 1:
-		Sleep(100);
-		clearConsole(); return; break;
-	case 2:break;
-	}
+	clearConsole();
+	return k;
 }
 
 void chooseDifficulty(int& n)
@@ -488,6 +551,7 @@ void chooseDifficulty(int& n)
 	while (n != 1 && n != 2 && n != 3)
 	{
 		std::cout << "Invalid input! Choose one of the presented options:" << std::endl;
+		clearInputStream();
 		n = getValidInt();
 	}
 	clearInputStream();
@@ -511,7 +575,8 @@ void chooseManualOrAutomaticPlacedShips(char field[][MAX_FIELD_LENGTH], int size
 
 	while (k != 1 && k != 2)
 	{
-		std::cout << "Invalid input! Choose 1 or 2: ";
+		std::cout << "Invalid input! Choose one of the presented options: ";
+		clearInputStream();
 		k = getValidInt();
 	}
 	clearInputStream();
@@ -588,15 +653,24 @@ bool areAllShipTilesHit(int k)
 	return k == AMOUNT_OF_SHIPS_TILES;
 }
 
-void playerAttack(char field[][MAX_FIELD_LENGTH], int n, int& amountOfHitTiles)
+void playerAttack(char field[][MAX_FIELD_LENGTH], int n, int& amountOfHitTiles,int hitsComputer)
 {
 	bool isHit = true;
 	while (isHit) {
 		int row, col;
 		printBattleField(field, n);
+		setColor(COLOR_EXIT);
+		std::cout << std::endl<<"Enter -1 to SAVE and EXIT." << std::endl;
+		setColor(COLOR_TEXT);
+		std::cout << "Choose where to shoot (row and col):" << std::endl;
 
-		std::cout << "Choose where to shoot (row and col): ";
-		getValidCoordinates(row, col, n);
+		getValidCoordinates(row, col, n,true);
+
+		if (row == -1)
+		{
+			saveGame(field, n, amountOfHitTiles, hitsComputer);
+			exit(0); 
+		}
 
 		if (isThisTileAlreadyShot(field, row, col)) {
 			std::cout << "You already shot there! Try again." << std::endl;
@@ -690,13 +764,13 @@ void computerAttack(char field[][MAX_FIELD_LENGTH], int n, int& amountOfHitTiles
 	}
 }
 
-void attacking(char field[][MAX_FIELD_LENGTH], int n)
+void attacking(char field[][MAX_FIELD_LENGTH], int n,int hitsPlayer=0,int hitsComputer=0)
 {
-	int amountOfHitTilesPlayer = 0;
-	int amountOfHitTilesComputer = 0;
+	int amountOfHitTilesPlayer = hitsPlayer;
+	int amountOfHitTilesComputer = hitsComputer;
 	while (true)
 	{
-		playerAttack(field, n, amountOfHitTilesPlayer);
+		playerAttack(field, n, amountOfHitTilesPlayer,amountOfHitTilesComputer);
 		if (areAllShipTilesHit(amountOfHitTilesPlayer))
 		{
 			std::cout << std::endl << "CONGRATULATIONS YOU HAVE SUCCESSFULLY SUNK ALL OF THE ENEMY'S SHIPS" << std::endl << "YOU WIN!!!";
@@ -715,7 +789,21 @@ void startGame()
 {
 	int n;
 	char field[MAX_FIELD_ROWS][MAX_FIELD_LENGTH];
-	startOrLoadGame();
+	int choice = startOrLoadGame();
+	if (choice == 2)
+	{
+		int hitsPlayer = 0;
+		int hitsComputer = 0;
+		if (loadGame(field, n, hitsPlayer, hitsComputer))
+		{
+			attacking(field, n, hitsPlayer, hitsComputer);
+			return;
+		}
+		else
+		{
+			std::cout << "Starting new game..." << std::endl;
+		}
+	}
 	chooseDifficulty(n);
 	createBattleField(field, n);
 	automaticPlacing(field, n, false);
